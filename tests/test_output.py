@@ -19,28 +19,28 @@ def parser():
     return CricketParser()
 
 def test_json_output_format(parser, sample_data):
-    """Test that output is generated in correct JSON format."""
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json') as temp_file:
+    """Test that output is generated in correct JSONL format."""
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.jsonl') as temp_file:
         # Write output to temporary file
         parser.write_output(sample_data, temp_file.name)
         
         # Read back and validate
         with open(temp_file.name) as f:
-            output_data = json.load(f)
+            lines = f.readlines()
         
-        # Check that output is a list of records
-        assert isinstance(output_data, list)
-        assert len(output_data) > 0
-        
-        # Check first record structure
-        first_record = output_data[0]
-        assert isinstance(first_record, dict)
-        assert all((v is None) or isinstance(v, (str, int, list)) for v in first_record.values())
+        # Check that each line is a valid JSON object
+        assert len(lines) > 0
+        for line in lines:
+            line = line.strip()
+            if line:  # Skip empty lines
+                record = json.loads(line)
+                assert isinstance(record, dict)
+                assert all((v is None) or isinstance(v, (str, int, list)) for v in record.values())
 
 def test_file_writing(parser, sample_data):
-    """Test that files are written correctly."""
+    """Test that files are written correctly in JSONL format."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        output_path = Path(temp_dir) / "output.json"
+        output_path = Path(temp_dir) / "output.jsonl"
         
         # Write output
         parser.write_output(sample_data, str(output_path))
@@ -51,8 +51,12 @@ def test_file_writing(parser, sample_data):
         
         # Check file content
         with open(output_path) as f:
-            output_data = json.load(f)
-        assert len(output_data) > 0
+            lines = f.readlines()
+        assert len(lines) > 0
+        for line in lines:
+            line = line.strip()
+            if line:  # Skip empty lines
+                assert json.loads(line)  # Verify each line is valid JSON
 
 def test_batch_processing(parser, sample_data):
     """Test batch processing of multiple files."""
@@ -66,25 +70,29 @@ def test_batch_processing(parser, sample_data):
             input_files.append(file_path)
         
         # Process all files
-        output_path = Path(temp_dir) / "batch_output.json"
+        output_path = Path(temp_dir) / "batch_output.jsonl"
         parser.process_batch([str(f) for f in input_files], str(output_path))
         
         # Check output
         assert output_path.exists()
         with open(output_path) as f:
-            output_data = json.load(f)
-        assert len(output_data) > 0
+            lines = f.readlines()
+        assert len(lines) > 0
+        for line in lines:
+            line = line.strip()
+            if line:  # Skip empty lines
+                assert json.loads(line)  # Verify each line is valid JSON
 
 def test_error_handling(parser, sample_data):
     """Test error handling during output generation."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Test invalid output path
-        invalid_path = Path(temp_dir) / "nonexistent" / "output.json"
+        invalid_path = Path(temp_dir) / "nonexistent" / "output.jsonl"
         with pytest.raises(Exception):
             parser.write_output(sample_data, str(invalid_path))
         
         # Test invalid input data
         invalid_data = {"invalid": "data"}
-        output_path = Path(temp_dir) / "output.json"
+        output_path = Path(temp_dir) / "output.jsonl"
         with pytest.raises(Exception):
             parser.write_output(invalid_data, str(output_path)) 

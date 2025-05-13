@@ -92,6 +92,13 @@ class CricketParser:
             toss_winner = toss.get("winner")
             toss_decision = toss.get("decision")
         balls_per_over = info.get("balls_per_over", 6)
+        
+        # Extract gender from event name if it contains "Women's"
+        gender = "women" if "Women's" in info.get("event", {}).get("name", "") else "men"
+        
+        # Extract event information
+        event = info.get("event", {})
+        
         return MatchInfo(
             match_date=info["dates"][0],
             match_type=info["match_type"],
@@ -103,7 +110,9 @@ class CricketParser:
             win_margin_type=win_margin_type,
             toss_winner=toss_winner,
             toss_decision=toss_decision,
-            balls_per_over=balls_per_over
+            balls_per_over=balls_per_over,
+            gender=gender,
+            event=event
         )
 
     def _process_innings(self, innings: Dict[str, Any], innings_number: int, match_info: MatchInfo) -> List[Dict[str, Any]]:

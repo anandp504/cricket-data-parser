@@ -21,8 +21,9 @@ class CricketDataTransformer:
             ValueError: If required fields are missing
             AssertionError: If data types or constraints are violated
         """
-        # Convert match info to dictionary
+        # Convert match info to dictionary and remove balls_per_over
         record = match_info.model_dump()
+        record.pop('balls_per_over', None)  # Remove balls_per_over field
         
         # Add delivery info
         record.update(delivery_info.model_dump())
@@ -32,7 +33,8 @@ class CricketDataTransformer:
             "match_date", "match_type", "venue", "city", "teams",
             "innings_number", "batting_team", "bowling_team",
             "over_number", "ball_number", "batter", "non_striker",
-            "bowler", "runs_batter", "runs_extras", "runs_total"
+            "bowler", "runs_batter", "runs_extras", "runs_total",
+            "gender", "event"
         }
         
         # Validate required fields
@@ -57,12 +59,14 @@ class CricketDataTransformer:
         assert isinstance(record["runs_batter"], int)
         assert isinstance(record["runs_extras"], int)
         assert isinstance(record["runs_total"], int)
+        assert isinstance(record["gender"], str)
+        assert isinstance(record["event"], dict)
         
-        # Validate numeric constraints
+        # Validate field values
+        assert record["gender"] in ["men", "women"], "Gender must be either 'men' or 'women'"
         assert record["runs_total"] == record["runs_batter"] + record["runs_extras"]
         assert record["over_number"] >= 0
-        balls_per_over = record.get("balls_per_over", 6)
-        assert 1 <= record["ball_number"] <= balls_per_over
+        assert 1 <= record["ball_number"] <= 6  # Hardcode 6 balls per over
         assert record["innings_number"] >= 1
         
         # Handle optional fields
@@ -73,7 +77,7 @@ class CricketDataTransformer:
             record["wicket_player_out"] = None
             record["wicket_fielders"] = []
         
-        return record 
+        return record
 
     def test_json_output_format(self, output_data: List[Dict[str, Any]]) -> None:
         """
@@ -87,4 +91,4 @@ class CricketDataTransformer:
         first_record = output_data[0]
         assert isinstance(first_record, dict)
         # Allow None values in the output record
-        assert all((v is None) or isinstance(v, (str, int, list)) for v in first_record.values()) 
+        assert all((v is None) or isinstance(v, (str, int, list, dict)) for v in first_record.values()) 

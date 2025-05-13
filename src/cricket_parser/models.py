@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class MatchInfo(BaseModel):
@@ -16,6 +16,8 @@ class MatchInfo(BaseModel):
         toss_winner: Team that won the toss
         toss_decision: Toss decision (bat/field)
         balls_per_over: Number of balls per over (default 6)
+        gender: Gender category of the match (men/women)
+        event: Event information (tournament, series, etc.)
     """
     match_date: str
     match_type: str
@@ -28,6 +30,8 @@ class MatchInfo(BaseModel):
     toss_winner: Optional[str] = None
     toss_decision: Optional[str] = None
     balls_per_over: int = 6
+    gender: str
+    event: Dict[str, Any] = Field(default_factory=dict)
 
 class DeliveryInfo(BaseModel):
     """
